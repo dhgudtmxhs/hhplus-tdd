@@ -30,4 +30,25 @@ public class PointService {
         return pointHistoryTable.selectAllByUserId(id);
     }
 
+    /**
+     * 특정 유저의 포인트 충전 조회
+     */
+    public UserPoint chargeUserPoint(long id, long amount) {
+        UserPoint userPoint = userPointTable.selectById(id);
+
+        if (amount <= 0) {
+            throw new IllegalArgumentException("충전 금액은 0원 이하일 수 없습니다.");
+        }
+
+        long newPoint = userPoint.point() + amount;
+
+        if (newPoint > MAX_POINT) {
+            throw new IllegalArgumentException("포인트 충전은 최대 잔고를 초과할 수 없습니다.");
+        }
+
+        UserPoint updatedPoint = userPointTable.insertOrUpdate(id, newPoint);
+        pointHistoryTable.insert(id, amount, TransactionType.CHARGE, updatedPoint.updateMillis());
+        return updatedPoint;
+    }
+
 }
