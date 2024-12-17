@@ -128,4 +128,65 @@ public class PointServiceTest {
         verify(pointHistoryTable).insert(eq(USER_ID), eq(chargeAmount), eq(TransactionType.CHARGE), anyLong());
     }
 
+    @Test
+    @DisplayName("사용 금액이 0원 이하일 때 예외가 발생한다.")
+    void useUserPoint_FailsWhenAmountIsZeroOrNegative() {
+        //Given
+        long useAmount = 0L;
+        when(userPointTable.selectById(USER_ID)).thenReturn(new UserPoint(USER_ID, useAmount, 0L));
+
+        //When & Then
+        assertThatThrownBy(() -> pointService.useUserPoint(USER_ID, useAmount))
+                .isInstanceOf(IllegalArgumentException.class) // 예외가 발생하는지 검증한다.
+                .hasMessage("사용 금액은 0원 이하일 수 없습니다.");
+
+        // 이후 메서드가 호출되지 않음을 검증한다.
+        verify(userPointTable, never()).insertOrUpdate(anyLong(), anyLong());
+        verify(pointHistoryTable, never()).insert(anyLong(), anyLong(), any(), anyLong());
+    }
+
+    @Test
+    @DisplayName("사용 시 잔고가 부족할 경우 예외가 발생한다.")
+    void useUserPoint_FailsWhenBalanceNotEnough() {
+        // Given
+        long currentPoint = 500L;
+        long useAmount = 1_000L;
+        when(userPointTable.selectById(USER_ID)).thenReturn(new UserPoint(USER_ID, currentPoint, 0L));
+
+        // When & Then
+        assertThatThrownBy(() -> pointService.useUserPoint(USER_ID, useAmount))
+                .isInstanceOf(IllegalArgumentException.class) // 예외가 발생하는지 검증한다.
+                .hasMessage("사용할 포인트가 보유한 포인트보다 많습니다.");
+
+        // 이후 메서드가 호출되지 않음을 검증한다.
+        verify(userPointTable, never()).insertOrUpdate(anyLong(), anyLong());
+        verify(pointHistoryTable, never()).insert(anyLong(), anyLong(), any(), anyLong());
+    }
+
+    @Test
+    @DisplayName("포인트 사용 예외 상황을 통과했을 때 특정 유저의 포인트를 사용한다.")
+    void useUserPointSuccess() {
+        // Given
+        long currentPoint = 500L;
+        long useAmount = 200L;
+        long expectedNewPoint = currentPoint - useAmount;
+
+        UserPoint currentUserPoint = new UserPoint(USER_ID, currentPoint, 0L);
+        UserPoint updatedUserPoint = new UserPoint(USER_ID, expectedNewPoint, System.currentTimeMillis());
+
+        when(userPointTable.selectById(USER_ID)).thenReturn(currentUserPoint);
+        when(userPointTable.insertOrUpdate(USER_ID, expectedNewPoint)).thenReturn(updatedUserPoint);
+
+        // When
+        UserPoint result = pointService.useUserPoint(USER_ID, useAmount);
+
+        // Then 반환한 객체가 동일한지 확인한다.
+        assertThat(result).isEqualTo(updatedUserPoint);
+
+        // 이후 메서드가 호출되지 않음을 검증한다.
+        verify(userPointTable).insertOrUpdate(USER_ID, expectedNewPoint);
+        verify(pointHistoryTable).insert(eq(USER_ID), eq(-useAmount), eq(TransactionType.USE), anyLong());
+    }
+
+
 }

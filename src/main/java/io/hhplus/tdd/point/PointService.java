@@ -51,4 +51,25 @@ public class PointService {
         return updatedPoint;
     }
 
+    /**
+     * 특정 유저의 포인트 사용 조회
+     */
+    public UserPoint useUserPoint(long id, long amount) {
+        UserPoint userPoint = userPointTable.selectById(id);
+
+        if (amount <= 0) {
+            throw new IllegalArgumentException("사용 금액은 0원 이하일 수 없습니다.");
+        }
+
+        long newPoint = userPoint.point() - amount;
+
+        if (newPoint < 0) {
+            throw new IllegalArgumentException("사용할 포인트가 보유한 포인트보다 많습니다.");
+        }
+
+        UserPoint updatedPoint = userPointTable.insertOrUpdate(id, newPoint);
+        pointHistoryTable.insert(id, -amount, TransactionType.USE, updatedPoint.updateMillis());
+        return updatedPoint;
+    }
+
 }
