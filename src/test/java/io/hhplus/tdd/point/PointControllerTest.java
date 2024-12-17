@@ -26,7 +26,7 @@ class PointControllerTest {
     private static final long USER_ID = 1L;
 
     @Test
-    @DisplayName("특정 유저의 포인트 정보 조회가 성공하고 200 응답을 반환하는지 검증")
+    @DisplayName("특정 유저의 포인트 정보 조회가 성공하고 200 응답을 반환한다.")
     void getUserPoint_Success() throws Exception {
         // Given
         UserPoint mockUserPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
@@ -42,7 +42,7 @@ class PointControllerTest {
     }
 
     @Test
-    @DisplayName("충전 금액이 0원 이하일 때 예외가 발생해 400 응답을 반환하는지 검증")
+    @DisplayName("충전 금액이 0원 이하일 때 예외가 발생해 400 응답을 반환한다.")
     void chargeUserPoint_FailsWhenAmountIsZeroOrNegative() throws Exception {
         // Given
         long chargeAmount = -100L;
