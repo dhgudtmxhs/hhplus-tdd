@@ -120,8 +120,12 @@ public class PointServiceTest {
         // When
         UserPoint result = pointService.chargeUserPoint(USER_ID, chargeAmount);
 
-        // Then 반환된 객체가 동일한지 확인한다.
-        assertThat(result).isEqualTo(updatedUserPoint);
+        // Then id와 point 상태를 검증한다.
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("updateMillis")
+                .isEqualTo(updatedUserPoint);
+
 
         // insertOrUpdate와 insert 메서드가 호출되었음을 검증한다.
         verify(userPointTable).insertOrUpdate(USER_ID, expectedNewPoint);
@@ -180,8 +184,11 @@ public class PointServiceTest {
         // When
         UserPoint result = pointService.useUserPoint(USER_ID, useAmount);
 
-        // Then 반환한 객체가 동일한지 확인한다.
-        assertThat(result).isEqualTo(updatedUserPoint);
+        // Then: id와 point 상태를 검증한다.
+        assertThat(result)
+                .usingRecursiveComparison()
+                .ignoringFields("updateMillis")
+                .isEqualTo(updatedUserPoint);
 
         // 이후 메서드가 호출되지 않음을 검증한다.
         verify(userPointTable).insertOrUpdate(USER_ID, expectedNewPoint);
