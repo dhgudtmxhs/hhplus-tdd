@@ -14,8 +14,6 @@ public class PointService {
     private final UserPointTable userPointTable;
     private final PointHistoryTable pointHistoryTable;
 
-    private static final long MAX_POINT = 1_000_000L; // 최대 잔고
-
     /**
      * 특정 유저의 포인트 정보 조회
      */
