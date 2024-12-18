@@ -35,18 +35,9 @@ public class PointService {
      */
     public UserPoint chargeUserPoint(long id, long amount) {
         UserPoint userPoint = userPointTable.selectById(id);
+        UserPoint updatedPoint = userPoint.charge(amount);
 
-        if (amount <= 0) {
-            throw new IllegalArgumentException("충전 금액은 0원 이하일 수 없습니다.");
-        }
-
-        long newPoint = userPoint.point() + amount;
-
-        if (newPoint > MAX_POINT) {
-            throw new IllegalArgumentException("포인트 충전은 최대 잔고를 초과할 수 없습니다.");
-        }
-
-        UserPoint updatedPoint = userPointTable.insertOrUpdate(id, newPoint);
+        userPointTable.insertOrUpdate(id, updatedPoint.point());
         pointHistoryTable.insert(id, amount, TransactionType.CHARGE, updatedPoint.updateMillis());
         return updatedPoint;
     }
@@ -56,18 +47,9 @@ public class PointService {
      */
     public UserPoint useUserPoint(long id, long amount) {
         UserPoint userPoint = userPointTable.selectById(id);
+        UserPoint updatedPoint = userPoint.use(amount);
 
-        if (amount <= 0) {
-            throw new IllegalArgumentException("사용 금액은 0원 이하일 수 없습니다.");
-        }
-
-        long newPoint = userPoint.point() - amount;
-
-        if (newPoint < 0) {
-            throw new IllegalArgumentException("사용할 포인트가 보유한 포인트보다 많습니다.");
-        }
-
-        UserPoint updatedPoint = userPointTable.insertOrUpdate(id, newPoint);
+        userPointTable.insertOrUpdate(id, updatedPoint.point());
         pointHistoryTable.insert(id, -amount, TransactionType.USE, updatedPoint.updateMillis());
         return updatedPoint;
     }
