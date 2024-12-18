@@ -190,7 +190,7 @@ public class PointServiceTest {
                 .ignoringFields("updateMillis")
                 .isEqualTo(updatedUserPoint);
 
-        // 이후 메서드가 호출되지 않음을 검증한다.
+        // 이후 메서드가 호출됨을 검증한다.
         verify(userPointTable).insertOrUpdate(USER_ID, expectedNewPoint);
         verify(pointHistoryTable).insert(eq(USER_ID), eq(-useAmount), eq(TransactionType.USE), anyLong());
     }
