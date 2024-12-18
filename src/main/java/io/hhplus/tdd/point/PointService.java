@@ -31,7 +31,7 @@ public class PointService {
     }
 
     /**
-     * 특정 유저의 포인트 충전 조회
+     * 특정 유저의 포인트 충전
      */
     public UserPoint chargeUserPoint(long id, long amount) {
         UserPoint userPoint = userPointTable.selectById(id);
@@ -43,7 +43,7 @@ public class PointService {
     }
 
     /**
-     * 특정 유저의 포인트 사용 조회
+     * 특정 유저의 포인트 사용
      */
     public UserPoint useUserPoint(long id, long amount) {
         UserPoint userPoint = userPointTable.selectById(id);
