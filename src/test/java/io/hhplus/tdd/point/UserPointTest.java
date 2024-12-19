@@ -84,4 +84,21 @@ class UserPointTest {
         assertThat(updatedPoint.point()).isEqualTo(500L);
     }
 
+    @Test
+    @DisplayName("유저 ID가 0 이하일 때 포인트를 조회하면 IllegalArgumentException 예외가 발생한다.")
+    void validateId_FailsWhenIdIsZeroOrNegative() {
+        // when & then
+        assertThatThrownBy(() -> UserPoint.validateId(-1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 유저 ID입니다. ID: " + "-1");
+    }
+
+    @Test
+    @DisplayName("유저 ID가 전달되면 validateId가 올바르게 동작한다.")
+    void validateId_SuccessWhenIdIsValid() {
+        // when & then
+        UserPoint.validateId(USER_ID);
+    }
+
+
 }

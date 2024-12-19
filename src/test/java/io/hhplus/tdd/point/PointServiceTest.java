@@ -195,5 +195,33 @@ public class PointServiceTest {
         verify(pointHistoryTable).insert(eq(USER_ID), eq(-useAmount), eq(TransactionType.USE), anyLong());
     }
 
+    @Test
+    @DisplayName("유저 ID가 0 이하일 때 포인트를 조회하면 IllegalArgumentException 예외가 발생한다.")
+    void getUserPoint_FailsWhenIdIsInvalid() {
+        // Given
+        long invalidId = 0L;
 
+        // When & Then
+        assertThatThrownBy(() -> pointService.getUserPoint(invalidId))
+                .isInstanceOf(IllegalArgumentException.class) // 예외를 검증한다.
+                .hasMessage("유효하지 않은 유저 ID입니다. ID: " + invalidId);
+
+        // 이후 메서드가 호출되지 않음을 검증한다.
+        verify(userPointTable, never()).selectById(anyLong());
+    }
+
+    @Test
+    @DisplayName("유저 ID가 0 이하일 때 포인트 내역을 조회하면 IllegalArgumentException 예외가 발생한다.")
+    void getUserPointHistories_FailsWhenIdIsInvalid() {
+        // Given
+        long invalidId = -1L;
+
+        // When & Then
+        assertThatThrownBy(() -> pointService.getUserPointHistories(invalidId))
+                .isInstanceOf(IllegalArgumentException.class)// 예외를 검증한다.
+                .hasMessage("유효하지 않은 유저 ID입니다. ID: " + invalidId);
+
+        // 이후 메서드가 호출되지 않음을 검증한다.
+        verify(pointHistoryTable, never()).selectAllByUserId(anyLong());
+    }
 }

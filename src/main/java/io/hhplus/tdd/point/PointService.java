@@ -26,13 +26,14 @@ public class PointService {
      * 특정 유저의 포인트 정보 조회
      */
     public UserPoint getUserPoint(long id) {
+        UserPoint.validateId(id);
         return userPointTable.selectById(id);
     }
-
     /**
      * 특정 유저의 포인트 충전/이용 내역 조회
      */
     public List<PointHistory> getUserPointHistories(long id) {
+        UserPoint.validateId(id);
         return pointHistoryTable.selectAllByUserId(id);
     }
 
