@@ -66,4 +66,60 @@ README에서는 동시성 제어에 대한 분석을 다루고 있으며, 전체
 
 ---
 
+### 메서드
+```java
+private final ConcurrentMap<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>();
+
+ public UserPoint chargeUserPoint(long id, long amount) {
+        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
+        lock.lock();
+        try {
+            UserPoint userPoint = userPointTable.selectById(id);
+            UserPoint updatedPoint = userPoint.charge(amount);
+
+            userPointTable.insertOrUpdate(id, updatedPoint.point());
+            pointHistoryTable.insert(id, amount, TransactionType.CHARGE, updatedPoint.updateMillis());
+            return updatedPoint;
+        } finally {
+            lock.unlock();
+            if (!lock.hasQueuedThreads()) {
+                userLocks.remove(id, lock);
+            }
+        }
+    }
+
+public UserPoint useUserPoint(long id, long amount) {
+        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
+        lock.lock();
+        try {
+            UserPoint userPoint = userPointTable.selectById(id);
+            UserPoint updatedPoint = userPoint.use(amount);
+            userPointTable.insertOrUpdate(id, updatedPoint.point());
+            pointHistoryTable.insert(id, -amount, TransactionType.USE, updatedPoint.updateMillis());
+            return updatedPoint;
+        } finally {
+            lock.unlock();
+            if (!lock.hasQueuedThreads()) {
+                userLocks.remove(id, lock);
+            }
+        }
+    }
+```
+-  **`ConcurrentMap`**을 사용하여 **`ReentrantLock`** 객체를 관리하여 사용자별로 처리합니다.
+
+1. **락 객체 생성 및 관리**:
+   - `ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));`
+     - `userLocks`는 각 **사용자 ID**에 대해 **`ReentrantLock`**을 관리하는 **맵**입니다.
+     - **`computeIfAbsent`**는 `id`에 해당하는 락이 없으면 새로 생성하여 추가합니다.
+     - `true`는 **공정락(Fair Lock)**을 설정하여 **먼저 요청한 스레드**가 **먼저 락을 획득**하도록 보장합니다.
+
+2. **락을 걸고 작업 시작**:
+   - `lock.lock();`을 사용하여 **락을 걸고**, 충전 작업을 진행합니다.
+   - **포인트 충전** 후, **업데이트된 포인트**를 데이터베이스에 반영하고, **포인트 충전 내역**을 히스토리 테이블에 기록합니다.
+
+3. **작업 후 락 해제**:
+   - `lock.unlock();`을 호출하여 **락을 해제**합니다.
+   - `if (!lock.hasQueuedThreads())`는 락을 기다리고 있는 다른 스레드가 없다면 해당 락을 **맵에서 제거**합니다. 이를 통해 **메모리 효율성**을 높입니다.
+  
+
 
