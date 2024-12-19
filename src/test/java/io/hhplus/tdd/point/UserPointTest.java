@@ -11,60 +11,76 @@ class UserPointTest {
     private static final long USER_ID = 1L;
 
     @Test
-    @DisplayName("충전 금액이 0원 이하일 때 예외가 발생한다.")
+    @DisplayName("유저가 포인트 충전 금액이 0원 이하일 때 충전하면 IllegalArgumentException 예외가 발생한다.")
     void charge_FailsWhenAmountIsZeroOrNegative() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
 
+        // when & then
         assertThatThrownBy(() -> userPoint.charge(-100L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("충전 금액은 0원 이하일 수 없습니다.");
     }
 
     @Test
-    @DisplayName("충전 시 최대 잔고를 초과하면 예외가 발생한다.")
+    @DisplayName("유저가 포인트 충전 시 최대 잔고를 초과하면 IllegalArgumentException 예외가 발생한다.")
     void charge_FailsWhenExceedingMaxPoint() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 999_999L, System.currentTimeMillis());
 
+        // when & then
         assertThatThrownBy(() -> userPoint.charge(100L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("포인트 충전은 최대 잔고를 초과할 수 없습니다.");
     }
 
     @Test
-    @DisplayName("충전 시 예외상황을 통과하면 특정 유저의 포인트를 충전한다.")
+    @DisplayName("유저가 포인트를 충전하면 잔액이 올바르게 증가한다.")
     void charge_Success() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
+
+        // when
         UserPoint updatedPoint = userPoint.charge(200L);
 
-        assertThat(updatedPoint.point()).isEqualTo(800L);
+        // then
+        assertThat(updatedPoint.point()).isEqualTo(1200L);
     }
 
     @Test
-    @DisplayName("사용 금액이 0원 이하일 때 예외가 발생한다.")
+    @DisplayName("유저가 포인트 사용 금액이 0원 이하일 때 사용하면 IllegalArgumentException 예외가 발생한다.")
     void use_FailsWhenAmountIsZeroOrNegative() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
 
+        // when & then
         assertThatThrownBy(() -> userPoint.use(-50L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용 금액은 0원 이하일 수 없습니다.");
     }
 
     @Test
-    @DisplayName("사용 시 잔고가 부족할 경우 예외가 발생한다.")
+    @DisplayName("유저가 포인트 사용 시 잔고가 부족할 경우 IllegalArgumentException 예외가 발생한다.")
     void use_FailsWhenAmountExceedsBalance() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
 
+        // when & then
         assertThatThrownBy(() -> userPoint.use(5000L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("사용할 포인트가 보유한 포인트보다 많습니다.");
     }
 
     @Test
-    @DisplayName("포인트 사용 예외 상황을 통과했을 때 특정 유저의 포인트를 사용한다.")
+    @DisplayName("유저가 포인트를 사용하면 잔액이 올바르게 감소한다.")
     void use_Success() {
+        // given
         UserPoint userPoint = new UserPoint(USER_ID, 1000L, System.currentTimeMillis());
+
+        // when
         UserPoint updatedPoint = userPoint.use(500L);
 
+        // then
         assertThat(updatedPoint.point()).isEqualTo(500L);
     }
 

@@ -30,7 +30,7 @@ public class PointServiceTest {
     private static final Long USER_ID = 1L;
 
     @Test
-    @DisplayName("특정 유저의 포인트를 조회한다.")
+    @DisplayName("유저가 포인트를 조회하면 올바른 포인트가 반환된다.")
     void getUserPoint_returnCorrectUserPoint() {
         // Given
         UserPoint mockUserPoint = new UserPoint(USER_ID, 1000L, 500L);
@@ -48,7 +48,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("특정 유저의 포인트 내역을 조회한다.")
+    @DisplayName("유저의 포인트 내역을 조회하면 올바른 내역이 반환된다.")
     void getUserPointHistories_returnCorrectHistories() {
         // Given
         PointHistory history1 = new PointHistory(1L, USER_ID, 500L, TransactionType.CHARGE, 1000L);
@@ -69,7 +69,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("충전 금액이 0원 이하일 때 예외가 발생한다.")
+    @DisplayName("유저가 포인트 충전 금액이 0원 이하일 때 충전하면 IllegalArgumentException 예외가 발생한다.")
     void chargeUserPoint_FailsWhenAmountIsZeroOrNegative() {
         // Given
         long chargeAmount = -100L;
@@ -86,7 +86,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("충전 시 최대 잔고를 초과하면 예외가 발생한다.")
+    @DisplayName("유저가 포인트 충전 시 최대 잔고를 초과하면 IllegalArgumentException 예외가 발생한다.")
     void chargeUserPoint_FailsWhenExceedingMaxPoint() {
         // Given
         long currentPoint = 999_900L;
@@ -104,7 +104,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 충전 예외 상황을 통과했을 때 특정 유저의 포인트를 충전한다.")
+    @DisplayName("유저가 포인트를 충전하면 잔액이 올바르게 증가한다.")
     void chargeUserPointSuccess() {
         // Given
         long currentPoint = 500_000L;
@@ -133,7 +133,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("사용 금액이 0원 이하일 때 예외가 발생한다.")
+    @DisplayName("유저가 포인트 사용 금액이 0원 이하일 때 사용하면 IllegalArgumentException 예외가 발생한다.")
     void useUserPoint_FailsWhenAmountIsZeroOrNegative() {
         //Given
         long useAmount = 0L;
@@ -150,7 +150,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("사용 시 잔고가 부족할 경우 예외가 발생한다.")
+    @DisplayName("유저가 포인트 사용 시 잔고가 부족할 경우 IllegalArgumentException 예외가 발생한다.")
     void useUserPoint_FailsWhenBalanceNotEnough() {
         // Given
         long currentPoint = 500L;
@@ -168,7 +168,7 @@ public class PointServiceTest {
     }
 
     @Test
-    @DisplayName("포인트 사용 예외 상황을 통과했을 때 특정 유저의 포인트를 사용한다.")
+    @DisplayName("유저가 포인트를 사용하면 잔액이 올바르게 감소한다.")
     void useUserPointSuccess() {
         // Given
         long currentPoint = 500L;
