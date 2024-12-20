@@ -75,10 +75,8 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
 
 ---
 
+### 메서드
 ```java
-    /**
-     * 특정 유저의 포인트 충전
-     */
     public UserPoint chargeUserPoint(long id, long amount) {
         ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
         lock.lock();
@@ -97,9 +95,6 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
         }
     }
 
-    /**
-     * 특정 유저의 포인트 사용
-     */
     public UserPoint useUserPoint(long id, long amount) {
         ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
         lock.lock();
@@ -116,24 +111,25 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
             }
         }
     }
+```
+### 주요 구성 요소
 
+- **ReentrantLock:**  
+  동시성 제어를 위해 사용되며, 동일 유저에 대한 동시 접근을 방지하여 데이터의 일관성을 유지합니다.
 
+- **userLocks 맵:**  
+  유저별 잠금을 관리하는 맵으로, 유저 ID를 키로 하고 `ReentrantLock`을 값으로 가집니다.
+
+- **userPointTable:**  
+  유저의 포인트 정보를 조회하고 업데이트하는 데이터베이스 테이블을 나타냅니다.
+
+- **pointHistoryTable:**  
+  포인트 변경 내역을 기록하는 테이블로, 추후 분석이나 기록 조회에 사용됩니다.
+
+---
+
+### 테스트
 ```java
-package io.hhplus.tdd.point;
-
-import io.hhplus.tdd.point.domain.PointService;
-import io.hhplus.tdd.point.domain.UserPoint;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @SpringBootTest
 public class PointServiceConcurrencyTest {
 
