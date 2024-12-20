@@ -76,6 +76,49 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
 ---
 
 ```java
+    /**
+     * 특정 유저의 포인트 충전
+     */
+    public UserPoint chargeUserPoint(long id, long amount) {
+        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
+        lock.lock();
+        try {
+            UserPoint userPoint = userPointTable.selectById(id);
+            UserPoint updatedPoint = userPoint.charge(amount);
+
+            userPointTable.insertOrUpdate(id, updatedPoint.point());
+            pointHistoryTable.insert(id, amount, TransactionType.CHARGE, updatedPoint.updateMillis());
+            return updatedPoint;
+        } finally {
+            lock.unlock();
+            if (!lock.hasQueuedThreads()) {
+                userLocks.remove(id, lock);
+            }
+        }
+    }
+
+    /**
+     * 특정 유저의 포인트 사용
+     */
+    public UserPoint useUserPoint(long id, long amount) {
+        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
+        lock.lock();
+        try {
+            UserPoint userPoint = userPointTable.selectById(id);
+            UserPoint updatedPoint = userPoint.use(amount);
+            userPointTable.insertOrUpdate(id, updatedPoint.point());
+            pointHistoryTable.insert(id, -amount, TransactionType.USE, updatedPoint.updateMillis());
+            return updatedPoint;
+        } finally {
+            lock.unlock();
+            if (!lock.hasQueuedThreads()) {
+                userLocks.remove(id, lock);
+            }
+        }
+    }
+
+
+```java
 package io.hhplus.tdd.point;
 
 import io.hhplus.tdd.point.domain.PointService;
