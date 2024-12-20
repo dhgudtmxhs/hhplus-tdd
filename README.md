@@ -16,10 +16,8 @@ README에서는 동시성 제어에 대한 분석을 다루고 있으며, 전체
 ### 이해
 각 사용자의 요청은 **다른 사용자와 구분되도록** 처리되어야 하며, **동일한 사용자에 대한 요청은 순차적으로 처리**되어야 합니다.  
 > 만약 다른 사용자와 구분되지 않는다면, 다른 사용자의 요청이 처리되는 동안 내 요청도 대기하게 될 수 있습니다.
->
-> 
----
 
+---
 
 ### `synchronized` vs `ReentrantLock`
 
@@ -43,85 +41,73 @@ README에서는 동시성 제어에 대한 분석을 다루고 있으며, 전체
 
 - **타임아웃 및 대기 시간 설정 가능**: `ReentrantLock`은 `tryLock()` 메서드를 통해 **타임아웃**을 설정하거나 **일정 시간 동안만 락**을 시도할 수 있습니다. 이로 인해 락을 획득하지 못할 경우 포기하거나 대체 작업을 수행할 수 있습니다. 이러한 유연한 제어는 **교착 상태**를 방지하고 시스템의 응답성을 높이는 데 도움이 됩니다.
 
-
-### 요약
-`synchronized`는 **메서드 단위**로 동기화를 처리하기 때문에 세밀한 제어가 어렵고, **공정성(fairness)**을 보장하지 않으며, **`ReentrantLock`**보다 유연한 제어가 어렵습니다. 또한, **타임아웃 설정** 등의 추가 기능이 없어 **순차 처리가 중요한** 경우 적합하지 않을 수 있습니다.
-  
-`ReentrantLock`은 **세밀한 제어**가 가능하고, **공정락**을 통해 락을 요청한 순서대로 처리되도록 보장하며, **재진입락**을 통해 동기화가 더 유연하게 이루어집니다. 또한 **타임아웃**이나 **대기 시간 설정** 등 다양한 기능을 제공하여 복잡한 동기화가 필요한 상황에서 유리합니다.
-
-
----
-
-
-### 공정락 (Fair Lock)과 비공정락 (Unfair Lock)의 차이
-
-#### 공정락 (Fair Lock)
-
-- **공정락**은 락을 요청한 순서대로 락을 획득하는 방식입니다. 즉, 먼저 락을 요청한 스레드가 먼저 락을 획득하도록 보장합니다.
-- 이는 대기 중인 스레드가 있으면, 항상 대기 중인 스레드가 선순위로 락을 획득할 수 있게 하여 **교착 상태**를 방지하고, **공정한 자원 할당**을 제공합니다.
-- 예를 들어, **ReentrantLock**을 사용할 때 **공정락**을 설정하려면, `new ReentrantLock(true)`와 같이 `true` 값을 설정합니다.
-
-#### 비공정락 (Unfair Lock)
-
-- **비공정락**은 락을 요청한 순서와 상관없이 락을 획득할 수 있습니다. 즉, 먼저 요청한 스레드가 반드시 먼저 락을 획득한다는 보장이 없습니다.
-- 락을 요청한 스레드 중에서 일부 스레드가 우선적으로 락을 획득할 수 있기 때문에, **교착 상태**나 **성능이 더 우선**하는 경우에 유리할 수 있습니다.
-- 기본적으로 **ReentrantLock**은 비공정락을 사용하며, `new ReentrantLock(false)`와 같이 `false` 값을 설정합니다.
-
----
-
-### 메서드
 ```java
-private final ConcurrentMap<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>();
+package io.hhplus.tdd.point;
 
- public UserPoint chargeUserPoint(long id, long amount) {
-        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
-        lock.lock();
-        try {
-            UserPoint userPoint = userPointTable.selectById(id);
-            UserPoint updatedPoint = userPoint.charge(amount);
+import io.hhplus.tdd.point.domain.PointService;
+import io.hhplus.tdd.point.domain.UserPoint;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
-            userPointTable.insertOrUpdate(id, updatedPoint.point());
-            pointHistoryTable.insert(id, amount, TransactionType.CHARGE, updatedPoint.updateMillis());
-            return updatedPoint;
-        } finally {
-            lock.unlock();
-            if (!lock.hasQueuedThreads()) {
-                userLocks.remove(id, lock);
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+public class PointServiceConcurrencyTest {
+
+    @Autowired
+    private PointService pointService;
+
+    @Test
+    @DisplayName("여러 사용자가 동시에 요청할 때 동일 사용자에 대한 충전/사용 작업은 순차적으로 처리된다.")
+    void concurrentChargeAndUseMultiUsersTest() throws InterruptedException {
+        // Given
+        final Long userId1 = 1L;
+        final Long userId2 = 2L;
+        final Long userId3 = 3L;
+        final int threadCount = 30; // 작업 수
+        final ExecutorService executorService = Executors.newFixedThreadPool(threadCount); // 쓰레드 풀 설정
+        final CountDownLatch countDownLatch = new CountDownLatch(threadCount); // 카운트 설정
+
+        // When: 각 10개의 충전 및 사용
+        for (int i = 0; i < threadCount; i++) {
+            final Long userId;
+            if (i % 3 == 0) {
+                userId = userId1;
+            } else if (i % 3 == 1) {
+                userId = userId2;
+            } else {
+                userId = userId3;
             }
+
+            executorService.submit(() -> {
+                try {
+                    pointService.chargeUserPoint(userId, 1000L);
+                    pointService.useUserPoint(userId, 400L);
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
         }
+
+        countDownLatch.await();
+        executorService.shutdown();
+
+        // Then
+        UserPoint finalUserPoint1 = pointService.getUserPoint(userId1);
+        assertThat(finalUserPoint1.point()).isEqualTo(6000L);
+
+        UserPoint finalUserPoint2 = pointService.getUserPoint(userId2);
+        assertThat(finalUserPoint2.point()).isEqualTo(6000L);
+
+        UserPoint finalUserPoint3 = pointService.getUserPoint(userId3);
+        assertThat(finalUserPoint3.point()).isEqualTo(6000L);
     }
 
-public UserPoint useUserPoint(long id, long amount) {
-        ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
-        lock.lock();
-        try {
-            UserPoint userPoint = userPointTable.selectById(id);
-            UserPoint updatedPoint = userPoint.use(amount);
-            userPointTable.insertOrUpdate(id, updatedPoint.point());
-            pointHistoryTable.insert(id, -amount, TransactionType.USE, updatedPoint.updateMillis());
-            return updatedPoint;
-        } finally {
-            lock.unlock();
-            if (!lock.hasQueuedThreads()) {
-                userLocks.remove(id, lock);
-            }
-        }
-    }
-```
--  **`ConcurrentMap`**을 사용하여 **`ReentrantLock`** 객체를 관리하여 사용자별로 처리합니다.
-
-1. **락 객체 생성 및 관리**:
-   - `ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));`
-     - `userLocks`는 각 사용자 ID에 대해 **`ReentrantLock`**을 관리하는 맵입니다.
-     - **`computeIfAbsent`**는 `id`에 해당하는 락이 없으면 새로 생성하여 추가합니다.
-     - `true`는 **공정락(Fair Lock)**을 설정하여 **먼저 요청한 스레드**가 **먼저 락을 획득**하도록 보장합니다.
-
-2. **락을 걸고 작업 시작**:
-   - `lock.lock();을 사용하여 락을 획득합니다. 이 시점에서 다른 스레드가 동일한 사용자 {id}에 대한 작업을 수행하지 못하도록 막습니다.
-
-3. **작업 후 락 해제**:
-   - `lock.unlock();`을 호출하여 **락을 해제**합니다. finally 로 unlock 을 감싸 예외 발생 시에도 락이 영구적으로 유지되는 데드락을 방지합니다.
-   - `if (!lock.hasQueuedThreads())`는 락을 기다리고 있는 다른 스레드가 없다면 해당 락을 맵에서 제거합니다. 이를 통해 메모리 효율성을 높입니다.
-  
-
+}
 
