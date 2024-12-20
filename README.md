@@ -201,6 +201,7 @@ public class PointServiceConcurrencyTest {
 
 }
 ```
+### 주요 구성 요소
 
 - **`executorService`** : 스레드 풀을 생성하여 동시에 여러 작업을 실행합니다.
 
