@@ -92,6 +92,8 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
 
 ### 메서드
 ```java
+    private final ConcurrentMap<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>();
+
     public UserPoint chargeUserPoint(long id, long amount) {
         ReentrantLock lock = userLocks.computeIfAbsent(id, k -> new ReentrantLock(true));
         lock.lock();
@@ -138,6 +140,8 @@ Java의 `ReentrantLock`은 공정락(Fair Lock)과 비공정락(Non-Fair Lock)�
 - **`lock()`** : 락을 획득하여 여러 스레드의 동시 접근을 제어합니다. 락을 획득한 스레드만 임계 영역에 접근할 수 있습니다. 만약 락이 이미 다른 스레드에 의해 획득된 상태라면, `lock()`을 호출한 스레드는 락이 해제될 때까지 대기하게 됩니다.
 
 - **`unlock()`** : 락을 해제하여 다른 스레드가 접근할 수 있도록 합니다. finally 블록에서 호출하여 예외가 발생해도 데드락을 방지하고 반드시 락을 해제하도록 보장합니다.
+
+- **`lock.hasQueuedThreads()`** : 락에 대해 대기 중인 스레드가 있는지 확인합니다. 대기 중인 스레드가 없다면, remove 메서드를 통해 맵에서 해당 ID의 락을 제거합니다. 이를 통해 메모리 누수를 방지하고, 불필요한 락 객체가 남아있지 않도록 관리합니다.
 
 ---
 
